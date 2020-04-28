@@ -59,6 +59,17 @@ class Model:
           setattr(self,k,v)
 
     def __convert(self,parent=None,name=None):
+        """
+        Convert the user defined Model into a standard form. This standard form is used internally by Python ACT-R.
+        This standard form will
+        1) convert all the user defined methods and objects into a dictionary, which is stored in self.__dict__
+        2) define several auxiliary variables to store the states of the standard form, e.g., self.__converted,
+           self.changes, self.parent, self.sch, self.log, self._children, etc.
+        3) recursively do the conversion to make sure every child of this object is in standard form.
+        :param parent: Specify the parent of the current object
+        :param name: Specify the name of the current object
+        :return: None
+        """
         #if self.__converted: return
         assert self.__converted==False
         self.__converted=True
@@ -68,6 +79,9 @@ class Model:
 
         methods={}
         objects={}
+        # =============================================================================================================
+        #  Retrieve the user defined methods and objects
+        # =============================================================================================================
         # In the following, we use inspect.getmro to get the baseclasses of the current class.
         # inpsect.getmro(cls) returns a tuple of class cls's base classes, including cls, in method resolution order.
         # No class appears more than once in this tuple.
@@ -102,9 +116,12 @@ class Model:
                                 objects[k]=v
         # We produce an independent copy of the objects. In the new objects, there is no reference to the original.
         objects=copy.deepcopy(objects)
-        # If the current class has parents or if the argument parent of function __convert(self,parent,name) is not None.
+        # =============================================================================================================
+        #  Define the auxiliary variables for storing the states of the current object
+        # =============================================================================================================
+        # If a parent is specified in __convert(self,parent,name),
         if parent:
-            # If the parent object has not been converted, we convert it now with the function __convert()
+            # if the parent object has not been converted, we are going to convert it now with the function __convert()
             if not parent.__converted: parent.__convert()
             # The current object inherits the scheduler from the parent object.
             self.sch=parent.sch
@@ -133,6 +150,9 @@ class Model:
             self.parent=None
         # We can further process the objects and methods obtained from the conversion.
         self._convert_info(objects,methods)
+        # =============================================================================================================
+        #  Convert the objects and methods to standard form and store them into self.__dict__
+        # =============================================================================================================
         # For each name-object pair in the dictionary "objects",
         for name,obj in objects.items():
             # if the object is an instance of the Model class,
@@ -167,9 +187,21 @@ class Model:
               # Lastly, we add the function object into __dict__ dictionary.
               self.__dict__[name]=w
         # If the start() function needs to be autonmatically run,
+        # =============================================================================================================
+        #  Run start() function to initialize the current object.
+        # =============================================================================================================
         if self._auto_run_start:
-            # We automatically run the function start().
-            self.start()
+            # We automatically run start().
+            # Hint: after the above processing, the original method start() has been converted into
+            # MethodGeneratorWrapper type. Hence, here we do not execute the original start() function.
+            # Instead, we execute the __callable__() of the "start", which is an instance of class MethodGeneratorWrapper.
+            self.start() # It is of class MethodGeneratorWrapper.
+        # =============================================================================================================
+        #  A final check to make all the Model objects attached to the instance "self" is converted to standard forms.
+        # =============================================================================================================
+        # Hint: The reason for this final check is because it is possible these Model objects are attached to the instance
+        #  but not included in the Modal class.
+        # In the following, if any object in self are instances of Model, we are going to make sure these objects are converted.
         # For each member in __dict__ dictionary, in the form of key-value pair,
         for k,v in self.__dict__.items():
             # if the object is not local, the object is not parent, and the object is an instance of class Model,
@@ -190,6 +222,8 @@ class Model:
         del self.parent._children[self.name]
       # We then add the key-value pair as a new member to __dict__ dictionary.
       self.__dict__[key]=value
+      # Hint: Only when the new attribute is an instance of class Model, we start to convert the instances of Model to
+      #       standard form.
       # If the new member is an instance of class Model, the new member is not private, and its is not a parent,
       if isinstance(value,Model) and key[0]!='_' and key!='parent':
         # We make sure the current object has been converted.

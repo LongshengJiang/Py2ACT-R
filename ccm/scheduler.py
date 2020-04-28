@@ -1,6 +1,6 @@
 # ==========================================================================================
 # The explanation of this script is not completed. I have several places I don't understand.
-# Longsheng Jiang April 26, 2020
+# Longsheng Jiang April 28, 2020
 # ==========================================================================================
 
 try:
@@ -41,14 +41,15 @@ class Event:
     # Let us now check if the contained code belongs to a generator.
     # If belonging to a generator,
     if code and code.co_flags&0x20==0x20:    # check for generator
-        # the syntax in Python ACT-R is that the first part of a generator function calculate the required time (delay),
-        # and the next part of the code defines the actions. Hence, in the following, we choose .next as the main body
-        # of the function.
+        # we want let the generator to output one element a time. We do so by using the following statement.
+        # For more information about python generator, please check this reference:
+        # https://www.programiz.com/python-programming/generator
         func=func(*args,**keys).next
+        # Make sure to clear the args and keys and to update the generator flag.
         args=[]
         keys={}
         self.generator=True
-    # Here we attach the inputs to the function __init__() to self.
+    # Here we finalize the attributes of self.
     self.func=func
     self.args=args
     self.keys=keys
@@ -95,11 +96,14 @@ class Scheduler:
             heapq.heapify(self.queue)
 
     def trigger(self,key,priority=None):
+        # Hint: If the function key is in the list of self.triggers, we add the function execution
+        # to the execution queue.
         if key in self.triggers:
             for event in self.triggers[key]:
                 event.time=self.time
                 if priority is not None:
                    event.priority=priority
+                # We add the function execution (event) into the execution queue.
                 self.add_event(event)
             del self.triggers[key][:]
 
@@ -118,7 +122,7 @@ class Scheduler:
           # Let us first wrap (1) the function, (2) the arguments and (3) keywords to the function,
           # (4) the time to execute, and (5) the priority together into an object.
           ev=Event(func,self.time+delay,args=args,keys=keys,priority=priority)
-          # We add the function execuation to the queue.
+          # This step is important. We add the function execuation to the execution queue.
           self.add_event(ev)
           return ev
 
@@ -163,6 +167,7 @@ class Scheduler:
         elif isinstance(result,(str,Trigger)):
             event.time=None
             if result not in self.triggers:
+                # Here we add function executions to the self.triggers dictionary.
                 self.triggers[result]=[event]
             else:
                 self.triggers[result].append(event)
