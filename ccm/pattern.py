@@ -54,6 +54,12 @@ class Pattern:
         if self.partial is not None:
           obj._partial=0.0
         try:
+            # Hint: In the following, each f in self.funcs corresponds to one item in the matching condition of a production rule.
+            # For example, suppose the matching condition of a production rule is "goal = Count ?start ?end starting".
+            # Each word in the phrase "Count ?start ?end starting" corresponds to a f in self.funcs.
+            # This for-loop says: If there is one f such that obj cannot match b, i.e. f(obj, b)==False, then return None.
+            # Returning None here implies that the production rule is not a match. For instance, the rule that has the
+            # matching condition "goal = Count ?start ?end starting" is not a match.
             for f in self.funcs:
                 if f(obj,b)==False:  return None
         except (AttributeError,TypeError,KeyError):

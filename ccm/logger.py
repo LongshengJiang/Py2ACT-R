@@ -214,6 +214,7 @@ class LogProxy:
 singleton_log=Log()
 log_proxy=LogProxy(singleton_log)
 def log(screen=None,html=None,data=None,summary=None,directory=None):
+    # If
     if screen is not None: singleton_log.do_screen=screen
     if html is not None: singleton_log.do_html=html
     if data is not None: singleton_log.do_data=data
